@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HybridGuard AI — Zero-Trust On-Device &amp; Cloud Sentry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-base: #0F131C;
+    --bg-mid: #1A2130;
+    --panel: #1E2736;
+    --border: #2E3D52;
+    --accent: #4A9EFF;
+    --amber: #F5A623;
+    --red: #FF4444;
+    --green: #00D084;
+    --text-primary: #E8EDF5;
+    --text-secondary: #8A9BB5;
+    --text-dim: #5A6B82;
+    --font-data: 'JetBrains Mono', monospace;
+    --font-ui: 'Inter', sans-serif;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, var(--bg-base) 0%, var(--bg-mid) 100%);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-base); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── LAYOUT ── */
+  .shell { max-width: 1600px; margin: 0 auto; padding: 0 24px 32px; }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(90deg, #111827 0%, #1a2436 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .brand { display: flex; flex-direction: column; }
+  .brand-name {
+    font-family: var(--font-data);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.08em;
+  }
+  .brand-sub {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    font-family: var(--font-data);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: rgba(46,61,82,0.4);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .nav-tab:hover, .nav-tab.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(74,158,255,0.08);
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: #0d111a;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+  .status-bar-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-data);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-green 2s ease-in-out infinite; }
+  .dot-blue  { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse-blue 2.5s ease-in-out infinite; }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--green); }
+    50% { opacity: 0.5; box-shadow: 0 0 12px var(--green); }
+  }
+  @keyframes pulse-blue {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--accent); }
+    50% { opacity: 0.5; box-shadow: 0 0 14px var(--accent); }
+  }
+
+  /* ── METRIC BANNER ── */
+  .metric-banner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px 0 24px;
+  }
+  .metric-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px 20px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .metric-card:nth-child(1)::before { background: var(--red); }
+  .metric-card:nth-child(2)::before { background: var(--green); }
+  .metric-card:nth-child(3)::before { background: var(--amber); }
+  .metric-card:nth-child(4)::before { background: var(--accent); }
+  .metric-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .metric-value {
+    font-family: var(--font-data);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .metric-card:nth-child(1) .metric-value { color: var(--red); }
+  .metric-card:nth-child(2) .metric-value { color: var(--green); }
+  .metric-card:nth-child(3) .metric-value { color: var(--amber); }
+  .metric-card:nth-child(4) .metric-value { color: var(--accent); }
+  .metric-delta {
+    margin-top: 6px;
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* ── PANELS GRID ── */
+  .panels-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  /* ── PANEL BASE ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 4px 24px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    flex-shrink: 0;
+  }
+  .panel-title-row { display: flex; align-items: center; gap: 10px; }
+  .panel-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-blue { background: rgba(74,158,255,0.15); border: 1px solid rgba(74,158,255,0.3); }
+  .icon-amber { background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.3); }
+  .icon-red { background: rgba(255,68,68,0.15); border: 1px solid rgba(255,68,68,0.3); }
+  .icon-green { background: rgba(0,208,132,0.15); border: 1px solid rgba(0,208,132,0.3); }
+  .panel-title {
+    font-family: var(--font-data);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .panel-badge {
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .badge-active { background: rgba(0,208,132,0.15); color: var(--green); border: 1px solid rgba(0,208,132,0.3); }
+  .badge-live { background: rgba(74,158,255,0.12); color: var(--accent); border: 1px solid rgba(74,158,255,0.25); animation: blink-badge 2s ease-in-out infinite; }
+  .badge-sync { background: rgba(0,208,132,0.12); color: var(--green); border: 1px solid rgba(0,208,132,0.25); }
+  .badge-queue { background: rgba(245,166,35,0.12); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); }
+
+  @keyframes blink-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .panel-body { flex: 1; padding: 16px; overflow: hidden; }
+
+  /* ═══════════════════════════════════════════════
+     PANEL 1 — INFERENCE TIER ROUTER
+  ═══════════════════════════════════════════════ */
+  .router-diagram {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+  .router-node {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .router-node-label {
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .router-node-name {
+    font-family: var(--font-data);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .router-stat {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+  .router-stat-val { color: var(--accent); font-weight: 600; }
+  .router-stat-val.green { color: var(--green); }
+  .router-stat-val.amber { color: var(--amber); }
+  .inference-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+  }
+  .i-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .i-dot.pass { background: var(--green); box-shadow: 0 0 5px rgba(0,208,132,0.5); }
+  .i-dot.escalate { background: var(--amber); box-shadow: 0 0 5px rgba(245,166,35,0.5); }
+  .i-dot.new-dot { animation: dot-pop 0.4s ease-out; }
+  @keyframes dot-pop {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.3); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Arrow */
+  .router-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    gap: 4px;
+    flex-shrink: 0;
+    width: 90px;
+  }
+  .router-center-label {
+    font-family: var(--font-data);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .arrow-track {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    position: relative;
+    overflow: visible;
+    margin: 4px 0;
+  }
+  .arrow-pulse {
+    position: absolute;
+    top: 50%;
+    left: -16px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 3px;
+    box-shadow: 0 0 8px var(--accent);
+    animation: arrow-flow 1.8s linear infinite;
+  }
+  .arrow-head {
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--accent);
+  }
+  @keyframes arrow-flow {
+    0% { left: -16px; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: calc(100% + 4px); opacity: 0; }
+  }
+
+  .router-stats-row {
+    display: flex;
+    gap: 16px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-top: 4px;
+  }
+  .router-stat-block { flex: 1; text-align: center; }
+  .router-stat-block-label {
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .router-stat-block-val {
+    font-family: var(--font-data);
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .sep { width: 1px; background: var(--border); }
+
+  /* ═══════════════════════════════════════════════
+     PANEL 2 — THREAT FEED
+  ═══════════════════════════════════════════════ */
+  .feed-table { width: 100%; border-collapse: collapse; }
+  .feed-table th {
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .feed-table td {
+    font-family: var(--font-data);
+    font-size: 10px;
+    padding: 7px 8px;
+    border-bottom: 1px solid rgba(46,61,82,0.4);
+    white-space: nowrap;
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+  .feed-table tr:hover td { background: rgba(74,158,255,0.04); }
+  .feed-table tr.new-row td { animation: row-flash 0.6s ease-out; }
+  @keyframes row-flash {
+    0% { background: rgba(74,158,255,0.12); }
+    100% { background: transparent; }
+  }
+  .verdict-badge {
+    display: inline-block;
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .v-blocked { background: rgba(255,68,68,0.15); color: var(--red); border: 1px solid rgba(255,68,68,0.3); }
+  .v-escalated { background: rgba(245,166,35,0.15); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+  .v-cleared { background: rgba(0,208,132,0.15); color: var(--green); border: 1px solid rgba(0,208,132,0.3); }
+  .tier-badge {
+    display: inline-block;
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .t-local { background: rgba(74,158,255,0.1); color: var(--accent); }
+  .t-cloud { background: rgba(245,166,35,0.1); color: var(--amber); }
+  .conf-high { color: var(--green); font-weight: 600; }
+  .conf-mid  { color: var(--amber); font-weight: 600; }
+  .conf-low  { color: var(--red); font-weight: 600; }
+  .feed-scroll { max-height: 310px; overflow-y: auto; }
+
+  /* ═══════════════════════════════════════════════
+     PANEL 3 — ESCALATION QUEUE
+  ═══════════════════════════════════════════════ */
+  .escalation-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .esc-stat {
+    flex: 1;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .esc-stat-label {
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .esc-stat-val {
+    font-family: var(--font-data);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .esc-stat-val.blue { color: var(--accent); }
+  .esc-stat-val.red { color: var(--red); }
+
+  .esc-card {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .esc-card:last-child { margin-bottom: 0; }
+  .esc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .esc-case-id {
+    font-family: var(--font-data);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .esc-verdict {
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .esc-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .esc-field { flex: 1; min-width: 80px; }
+  .esc-field-label {
+    font-family: var(--font-data);
+    font-size: 8px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+  .esc-field-val {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .conf-bar-wrap {
+    margin-top: 6px;
+  }
+  .conf-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+  .conf-bar-track {
+    height: 4px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .conf-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* ═══════════════════════════════════════════════
+     PANEL 4 — AUDIT LEDGER
+  ═══════════════════════════════════════════════ */
+  .sync-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-bottom: 12px;
+  }
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sync-pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: sync-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes sync-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px var(--green); }
+    50% { opacity: 0.4; transform: scale(0.8); box-shadow: 0 0 3px var(--green); }
+  }
+  .sync-label {
+    font-family: var(--font-data);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .sync-info {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .audit-table { width: 100%; border-collapse: collapse; }
+  .audit-table th {
+    font-family: var(--font-data);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .audit-table td {
+    font-family: var(--font-data);
+    font-size: 10px;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(46,61,82,0.3);
+    color: var(--text-secondary);
+  }
+  .hash-val {
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .audit-action {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ledger-footer {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ledger-footer span { color: var(--green); font-weight: 600; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    padding: 16px 24px;
+    background: rgba(0,0,0,0.2);
+  }
+  .footer-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer-text {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+  .footer-text a { color: var(--accent); text-decoration: none; }
+
+  /* ── DIVIDER ── */
+  .sep-h { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
+
+  /* ── CHAMFER CORNERS (cosmetic) ── */
+  .chamfer {
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-name">HYBRIDGUARD AI</div>
+      <div class="brand-sub">Zero-Trust On-Device &amp; Cloud Sentry</div>
+    </div>
+    <nav class="nav-tabs">
+      <a class="nav-tab active" href="#">TIER ROUTER</a>
+      <a class="nav-tab" href="#">THREAT FEED</a>
+      <a class="nav-tab" href="#">ESCALATION Q</a>
+      <a class="nav-tab" href="#">AUDIT LEDGER</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ══════════════ STATUS BAR ══════════════ -->
+<div class="status-bar">
+  <div class="status-bar-inner">
+    <div class="status-pill">
+      <div class="status-dot dot-green"></div>
+      GEMINI NANO ACTIVE
+    </div>
+    <div class="sep-h"></div>
+    <div class="status-pill">
+      <div class="status-dot dot-blue"></div>
+      FIREBASE AI LOGIC ARMED
+    </div>
+    <div class="sep-h"></div>
+    <div class="status-pill">
+      <div class="status-dot dot-green"></div>
+      FIRESTORE SYNC ONLINE
+    </div>
+    <div class="sep-h"></div>
+    <div class="status-pill" style="margin-left:auto;">
+      <div class="status-dot dot-blue"></div>
+      <span style="font-family:var(--font-data);font-size:10px;color:var(--text-dim);">SYS TIME:</span>
+      <span id="sys-clock" style="font-family:var(--font-data);font-size:10px;color:var(--accent);font-weight:600;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SHELL ══════════════ -->
+<div class="shell">
+
+  <!-- METRIC BANNER -->
+  <div class="metric-banner">
+    <div class="metric-card">
+      <div class="metric-label">Threats Blocked Today</div>
+      <div class="metric-value" id="met-1">0</div>
+      <div class="metric-delta">+47 since last hour</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Local Inference Rate</div>
+      <div class="metric-value" id="met-2">0<span style="font-size:16px;">%</span></div>
+      <div class="metric-delta">847 of 870 decisions local</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Cloud Escalations</div>
+      <div class="metric-value" id="met-3">0</div>
+      <div class="metric-delta">2 overrides issued today</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Audit Entries</div>
+      <div class="metric-value" id="met-4">0</div>
+      <div class="metric-delta">Hash chain verified</div>
+    </div>
+  </div>
+
+  <!-- PANELS GRID -->
+  <div class="panels-grid">
+
+    <!-- ══ PANEL 1: INFERENCE TIER ROUTER ══ -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-icon icon-blue">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="3" cy="6" r="2" fill="#4A9EFF"/>
+              <circle cx="9" cy="6" r="2" fill="#4A9EFF" opacity="0.5"/>
+              <line x1="5" y1="6" x2="7" y2="6" stroke="#4A9EFF" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="panel-title">Inference Tier Router</div>
+        </div>
+        <div class="panel-badge badge-active">ACTIVE</div>
+      </div>
+      <div class="panel-body">
+        <div class="router-diagram">
+          <!-- ON-DEVICE NODE -->
+          <div class="router-node" style="border-left: 2px solid var(--green);">
+            <div class="router-node-label">On-Device Tier</div>
+            <div class="router-node-name">GEMINI NANO<br>(ON-DEVICE)</div>
+            <div class="router-stat">STATUS: <span class="router-stat-val green">ACTIVE</span></div>
+            <div class="router-stat">LATENCY: <span class="router-stat-val green">0.4ms</span></div>
+            <div class="inference-dots" id="inference-dots">
+              <div class="i-dot pass"></div>
+              <div class="i-dot pass"></div>
+              <div class="i-dot pass"></div>
+              <div class="i-dot escalate"></div>
+              <div class="i-dot pass"></div>
+              <div class="i-dot pass"></div>
+              <div class="i-dot escalate"></div>
+              <div class="i-dot pass"></div>
+            </div>
+          </div>
+          <!-- ARROW / ROUTER CENTER -->
+          <div class="router-arrow">
+            <div class="router-center-label">FIREBASE AI<br>LOGIC<br>ROUTER</div>
+            <div class="arrow-track">
+              <div class="arrow-pulse"></div>
+              <div class="arrow-head"></div>
+            </div>
+          </div>
+          <!-- CLOUD NODE -->
+          <div class="router-node" style="border-left: 2px solid var(--amber);" id="cloud-node">
+            <div class="router-node-label">Cloud Tier</div>
+            <div class="router-node-name">GEMINI FLASH<br>(CLOUD)</div>
+            <div class="router-stat">STATUS: <span class="router-stat-val amber" id="cloud-status">STANDBY</span></div>
+            <div class="router-stat">LATENCY: <span class="router-stat-val amber">240ms</span></div>
+            <div style="margin-top:10px;">
+              <div style="font-family:var(--font-data);font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">ESCALATION TRIGGER</div>
+              <div style="font-family:var(--font-data);font-size:10px;color:var(--amber);">CONFIDENCE &lt; 72%</div>
+            </div>
+          </div>
+        </div>
+        <!-- ROUTING STATS -->
+        <div class="router-stats-row">
+          <div class="router-stat-block">
+            <div class="router-stat-block-label">LOCAL</div>
+            <div class="router-stat-block-val" style="color:var(--green);" id="stat-local">847</div>
+          </div>
+          <div class="sep"></div>
+          <div class="router-stat-block">
+            <div class="router-stat-block-label">ESCALATED</div>
+            <div class="router-stat-block-val" style="color:var(--amber);" id="stat-escalated">23</div>
+          </div>
+          <div class="sep"></div>
+          <div class="router-stat-block">
+            <div class="router-stat-block-label">RATIO LOCAL</div>
+            <div class="router-stat-block-val" style="color:var(--accent);" id="stat-ratio">97.4%</div>
+          </div>
+          <div class="sep"></div>
+          <div class="router-stat-block">
+            <div class="router-stat-block-label">TOTAL REQ</div>
+            <div class="router-stat-block-val" style="color:var(--text-secondary);" id="stat-total">870</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL 2: LIVE THREAT DETECTION FEED ══ -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-icon icon-red">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1L11 10H1L6 1Z" stroke="#FF4444" stroke-width="1.2" fill="none"/>
+              <line x1="6" y1="4.5" x2="6" y2="7" stroke="#FF4444" stroke-width="1.2" stroke-linecap="round"/>
+              <circle cx="6" cy="8.5" r="0.6" fill="#FF4444"/>
+            </svg>
+          </div>
+          <div class="panel-title">Live Threat Detection Feed</div>
+        </div>
+        <div class="panel-badge badge-live">LIVE</div>
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <div class="feed-scroll">
+          <table class="feed-table">
+            <thead>
+              <tr>
+                <th>TIMESTAMP</th>
+                <th>REQUEST ID</th>
+                <th>THREAT TYPE</th>
+                <th>VERDICT</th>
+                <th>TIER</th>
+                <th>CONF</th>
+                <th>LAT</th>
+              </tr>
+            </thead>
+            <tbody id="feed-tbody">
+              <tr>
+                <td>16:15:08</td>
+                <td>req_8f3a2c1</td>
+                <td>PROMPT_INJECTION</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">98.1%</td>
+                <td>0.3ms</td>
+              </tr>
+              <tr>
+                <td>16:15:04</td>
+                <td>req_7d9b1a4</td>
+                <td>SQL_INJECT</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">95.7%</td>
+                <td>0.4ms</td>
+              </tr>
+              <tr>
+                <td>16:14:59</td>
+                <td>req_6c0e5f8</td>
+                <td>SAFE</td>
+                <td><span class="verdict-badge v-cleared">CLEARED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">99.2%</td>
+                <td>0.4ms</td>
+              </tr>
+              <tr>
+                <td>16:14:51</td>
+                <td>req_5b2f9d3</td>
+                <td>XSS_PAYLOAD</td>
+                <td><span class="verdict-badge v-escalated">ESCALATED</span></td>
+                <td><span class="tier-badge t-cloud">CLOUD</span></td>
+                <td class="conf-mid">68.4%</td>
+                <td>241ms</td>
+              </tr>
+              <tr>
+                <td>16:14:47</td>
+                <td>req_4a1c7e9</td>
+                <td>SAFE</td>
+                <td><span class="verdict-badge v-cleared">CLEARED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">97.8%</td>
+                <td>0.3ms</td>
+              </tr>
+              <tr>
+                <td>16:14:40</td>
+                <td>req_3e8b2a7</td>
+                <td>OPEN_REDIRECT</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">91.3%</td>
+                <td>0.5ms</td>
+              </tr>
+              <tr>
+                <td>16:14:33</td>
+                <td>req_2d4a6b1</td>
+                <td>AUTH_BYPASS</td>
+                <td><span class="verdict-badge v-escalated">ESCALATED</span></td>
+                <td><span class="tier-badge t-cloud">CLOUD</span></td>
+                <td class="conf-mid">61.2%</td>
+                <td>238ms</td>
+              </tr>
+              <tr>
+                <td>16:14:27</td>
+                <td>req_1c9f3e5</td>
+                <td>PROMPT_INJECTION</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">96.5%</td>
+                <td>0.4ms</td>
+              </tr>
+              <tr>
+                <td>16:14:19</td>
+                <td>req_0b8e2d4</td>
+                <td>SQL_INJECT</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">94.1%</td>
+                <td>0.4ms</td>
+              </tr>
+              <tr>
+                <td>16:14:12</td>
+                <td>req_9a7c5b2</td>
+                <td>XSS_PAYLOAD</td>
+                <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+                <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+                <td class="conf-high">88.9%</td>
+                <td>0.5ms</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL 3: CLOUD ESCALATION QUEUE ══ -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-icon icon-amber">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 10V7L6 2L10 7V10H7.5V7.5H4.5V10H2Z" stroke="#F5A623" stroke-width="1" fill="none"/>
+            </svg>
+          </div>
+          <div class="panel-title">Cloud Escalation Queue</div>
+        </div>
+        <div class="panel-badge badge-queue">23 QUEUED</div>
+      </div>
+      <div class="panel-body">
+        <!-- SUMMARY STATS -->
+        <div class="escalation-summary">
+          <div class="esc-stat">
+            <div class="esc-stat-label">Escalated Today</div>
+            <div class="esc-stat-val">23</div>
+          </div>
+          <div class="esc-stat">
+            <div class="esc-stat-label">Avg Cloud Time</div>
+            <div class="esc-stat-val blue">240ms</div>
+          </div>
+          <div class="esc-stat">
+            <div class="esc-stat-label">Overrides</div>
+            <div class="esc-stat-val red">2</div>
+          </div>
+        </div>
+
+        <!-- CASE CARDS -->
+        <div class="esc-card">
+          <div class="esc-card-header">
+            <div class="esc-case-id">ESC-2024-0023</div>
+            <div class="esc-verdict v-blocked verdict-badge">BLOCKED</div>
+          </div>
+          <div class="esc-row">
+            <div class="esc-field">
+              <div class="esc-field-label">Threat Class</div>
+              <div class="esc-field-val">AUTH_BYPASS</div>
+            </div>
+            <div class="esc-field">
+              <div class="esc-field-label">Analysis Time</div>
+              <div class="esc-field-val">238ms</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-label">
+              <span>ON-DEVICE CONFIDENCE</span>
+              <span style="color:var(--amber);">61.2%</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" style="width:61.2%;background:var(--amber);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="esc-card">
+          <div class="esc-card-header">
+            <div class="esc-case-id">ESC-2024-0022</div>
+            <div class="esc-verdict v-escalated verdict-badge">OVERRIDE</div>
+          </div>
+          <div class="esc-row">
+            <div class="esc-field">
+              <div class="esc-field-label">Threat Class</div>
+              <div class="esc-field-val">XSS_PAYLOAD</div>
+            </div>
+            <div class="esc-field">
+              <div class="esc-field-label">Analysis Time</div>
+              <div class="esc-field-val">251ms</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-label">
+              <span>ON-DEVICE CONFIDENCE</span>
+              <span style="color:var(--amber);">68.4%</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" style="width:68.4%;background:var(--amber);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="esc-card" style="border-left-color:var(--red);">
+          <div class="esc-card-header">
+            <div class="esc-case-id">ESC-2024-0019</div>
+            <div class="esc-verdict v-blocked verdict-badge">BLOCKED</div>
+          </div>
+          <div class="esc-row">
+            <div class="esc-field">
+              <div class="esc-field-label">Threat Class</div>
+              <div class="esc-field-val">PROMPT_INJECTION</div>
+            </div>
+            <div class="esc-field">
+              <div class="esc-field-label">Analysis Time</div>
+              <div class="esc-field-val">245ms</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-label">
+              <span>ON-DEVICE CONFIDENCE</span>
+              <span style="color:var(--red);">47.9%</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" style="width:47.9%;background:var(--red);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="esc-card">
+          <div class="esc-card-header">
+            <div class="esc-case-id">ESC-2024-0017</div>
+            <div class="esc-verdict v-cleared verdict-badge">CLEARED</div>
+          </div>
+          <div class="esc-row">
+            <div class="esc-field">
+              <div class="esc-field-label">Threat Class</div>
+              <div class="esc-field-val">OPEN_REDIRECT</div>
+            </div>
+            <div class="esc-field">
+              <div class="esc-field-label">Analysis Time</div>
+              <div class="esc-field-val">229ms</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-label">
+              <span>ON-DEVICE CONFIDENCE</span>
+              <span style="color:var(--amber);">65.1%</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" style="width:65.1%;background:var(--amber);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="esc-card">
+          <div class="esc-card-header">
+            <div class="esc-case-id">ESC-2024-0014</div>
+            <div class="esc-verdict v-blocked verdict-badge">BLOCKED</div>
+          </div>
+          <div class="esc-row">
+            <div class="esc-field">
+              <div class="esc-field-label">Threat Class</div>
+              <div class="esc-field-val">SQL_INJECT</div>
+            </div>
+            <div class="esc-field">
+              <div class="esc-field-label">Analysis Time</div>
+              <div class="esc-field-val">232ms</div>
+            </div>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-label">
+              <span>ON-DEVICE CONFIDENCE</span>
+              <span style="color:var(--amber);">70.0%</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" style="width:70%;background:var(--amber);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL 4: OFFLINE AUDIT LEDGER ══ -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-icon icon-green">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="2" y="1.5" width="8" height="9" rx="1" stroke="#00D084" stroke-width="1"/>
+              <line x1="4" y1="4.5" x2="8" y2="4.5" stroke="#00D084" stroke-width="0.8"/>
+              <line x1="4" y1="6.5" x2="8" y2="6.5" stroke="#00D084" stroke-width="0.8"/>
+              <line x1="4" y1="8.5" x2="6.5" y2="8.5" stroke="#00D084" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <div class="panel-title">Offline Audit Ledger — Firestore Sync</div>
+        </div>
+        <div class="panel-badge badge-sync">SYNCED</div>
+      </div>
+      <div class="panel-body">
+        <!-- SYNC ROW -->
+        <div class="sync-row">
+          <div class="sync-status">
+            <div class="sync-pulse-dot" id="sync-dot"></div>
+            <div class="sync-label">ONLINE — SYNCED</div>
+          </div>
+          <div class="sync-info">FIRESTORE / hybridguard-prod / audit_ledger</div>
+        </div>
+
+        <!-- AUDIT TABLE -->
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>TIMESTAMP</th>
+              <th>ACTION</th>
+              <th>TIER</th>
+              <th>VERDICT</th>
+              <th>LEDGER HASH</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>16:15:08</td>
+              <td><span class="audit-action" style="color:var(--red);">BLOCK</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+              <td class="hash-val">A3F8C2D1</td>
+            </tr>
+            <tr>
+              <td>16:15:04</td>
+              <td><span class="audit-action" style="color:var(--red);">BLOCK</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+              <td class="hash-val">9E4B7F2A</td>
+            </tr>
+            <tr>
+              <td>16:14:59</td>
+              <td><span class="audit-action" style="color:var(--green);">PASS</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-cleared">CLEARED</span></td>
+              <td class="hash-val">C1D5A8E3</td>
+            </tr>
+            <tr>
+              <td>16:14:51</td>
+              <td><span class="audit-action" style="color:var(--amber);">ESCALATE</span></td>
+              <td><span class="tier-badge t-cloud">CLOUD</span></td>
+              <td><span class="verdict-badge v-escalated">ESCALATED</span></td>
+              <td class="hash-val">7F2E9B4C</td>
+            </tr>
+            <tr>
+              <td>16:14:47</td>
+              <td><span class="audit-action" style="color:var(--green);">PASS</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-cleared">CLEARED</span></td>
+              <td class="hash-val">B8A3C6F1</td>
+            </tr>
+            <tr>
+              <td>16:14:40</td>
+              <td><span class="audit-action" style="color:var(--red);">BLOCK</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+              <td class="hash-val">5D1F7A2E</td>
+            </tr>
+            <tr>
+              <td>16:14:33</td>
+              <td><span class="audit-action" style="color:var(--amber);">ESCALATE</span></td>
+              <td><span class="tier-badge t-cloud">CLOUD</span></td>
+              <td><span class="verdict-badge v-escalated">ESCALATED</span></td>
+              <td class="hash-val">E9C4B8D3</td>
+            </tr>
+            <tr>
+              <td>16:14:27</td>
+              <td><span class="audit-action" style="color:var(--red);">BLOCK</span></td>
+              <td><span class="tier-badge t-local">ON-DEVICE</span></td>
+              <td><span class="verdict-badge v-blocked">BLOCKED</span></td>
+              <td class="hash-val">2A6E3C9F</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="ledger-footer">
+          <span>TAMPER-PROOF LEDGER:</span> <span>1,247 ENTRIES</span>
+          &nbsp;|&nbsp;
+          HASH CHAIN: <span>VERIFIED</span>
+          &nbsp;|&nbsp;
+          LAST SYNC: <span>NOW</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panels-grid -->
+</div><!-- /shell -->
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-text">
+      HybridGuard AI v1.0.0 &nbsp;|&nbsp; Firebase AI Logic SDK &nbsp;|&nbsp;
+      Gemini Nano On-Device + Gemini Flash Cloud &nbsp;|&nbsp;
+      <a href="mailto:usmanbamidele200@gmail.com">usmanbamidele200@gmail.com</a>
+    </div>
+    <div class="footer-text" style="color:var(--text-dim);">
+      Zero-Trust Architecture &nbsp;&bull;&nbsp; Offline-First &nbsp;&bull;&nbsp; Tamper-Proof Ledger
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── CLOCK ── */
+  function updateClock() {
+    var el = document.getElementById('sys-clock');
+    if (el) {
+      var now = new Date();
+      var h = String(now.getUTCHours()).padStart(2,'0');
+      var m = String(now.getUTCMinutes()).padStart(2,'0');
+      var s = String(now.getUTCSeconds()).padStart(2,'0');
+      el.textContent = h + ':' + m + ':' + s + ' UTC';
+    }
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ── COUNT-UP ANIMATION ── */
+  function countUp(id, target, duration, suffix) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var start = 0;
+    var step = target / (duration / 16);
+    var current = 0;
+    var isPercent = typeof suffix === 'string' && suffix === '%';
+    function tick() {
+      current = Math.min(current + step, target);
+      if (isPercent) {
+        el.innerHTML = current.toFixed(1) + '<span style="font-size:16px;">%</span>';
+      } else {
+        el.textContent = Math.floor(current).toLocaleString();
+      }
+      if (current < target) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  window.addEventListener('load', function() {
+    countUp('met-1', 1247, 1500, '');
+    countUp('met-2', 97.4, 1500, '%');
+    countUp('met-3', 23, 1500, '');
+    countUp('met-4', 8431, 1500, '');
+  });
+
+  /* ── PANEL 1: INFERENCE DOT ANIMATION ── */
+  var dotIndex = 0;
+  var dotPatterns = ['pass','pass','pass','escalate','pass','pass','pass','pass','escalate','pass'];
+  setInterval(function() {
+    var container = document.getElementById('inference-dots');
+    if (!container) return;
+    var dots = container.querySelectorAll('.i-dot');
+    // remove oldest dot
+    if (dots.length >= 10) container.removeChild(dots[0]);
+    // add new dot
+    var newDot = document.createElement('div');
+    var kind = dotPatterns[dotIndex % dotPatterns.length];
+    dotIndex++;
+    newDot.className = 'i-dot ' + kind + ' new-dot';
+    container.appendChild(newDot);
+
+    // update router stats
+    var localEl = document.getElementById('stat-local');
+    var totalEl = document.getElementById('stat-total');
+    var escEl   = document.getElementById('stat-escalated');
+    var ratioEl = document.getElementById('stat-ratio');
+    if (localEl && totalEl && escEl && ratioEl) {
+      var total = parseInt(totalEl.textContent) + 1;
+      var esc   = parseInt(escEl.textContent) + (kind === 'escalate' ? 1 : 0);
+      var local = total - esc;
+      var ratio = ((local / total) * 100).toFixed(1);
+      totalEl.textContent = total;
+      localEl.textContent = local;
+      escEl.textContent   = esc;
+      ratioEl.textContent = ratio + '%';
+    }
+
+    // flash cloud status on escalation
+    var cloudStatus = document.getElementById('cloud-status');
+    if (kind === 'escalate' && cloudStatus) {
+      cloudStatus.textContent = 'ACTIVE';
+      cloudStatus.style.color = '#FF4444';
+      setTimeout(function() {
+        cloudStatus.textContent = 'STANDBY';
+        cloudStatus.style.color = '#F5A623';
+      }, 1800);
+    }
+  }, 2000);
+
+  /* ── PANEL 2: LIVE THREAT FEED ── */
+  var threatTypes = [
+    { type: 'PROMPT_INJECTION', verdict: 'BLOCKED',   vClass: 'v-blocked',   tier: 'ON-DEVICE', tClass: 't-local', confRange: [88,99], latMs: null },
+    { type: 'SQL_INJECT',       verdict: 'BLOCKED',   vClass: 'v-blocked',   tier: 'ON-DEVICE', tClass: 't-local', confRange: [85,98], latMs: null },
+    { type: 'XSS_PAYLOAD',      verdict: 'ESCALATED', vClass: 'v-escalated', tier: 'CLOUD',     tClass: 't-cloud', confRange: [55,70], latMs: [230,260] },
+    { type: 'OPEN_REDIRECT',    verdict: 'BLOCKED',   vClass: 'v-blocked',   tier: 'ON-DEVICE', tClass: 't-local', confRange: [80,95], latMs: null },
+    { type: 'AUTH_BYPASS',      verdict: 'ESCALATED', vClass: 'v-escalated', tier: 'CLOUD',     tClass: 't-cloud', confRange: [58,70], latMs: [225,255] },
+    { type: 'SAFE',             verdict: 'CLEARED',   vClass: 'v-cleared',   tier: 'ON-DEVICE', tClass: 't-local', confRange: [94,99], latMs: null },
+  ];
+  var feedCounter = 0;
+  var reqBase = 1000;
+
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function randHex(len) {
+    var chars = '0123456789abcdef';
+    var s = '';
+    for (var i=0; i<len; i++) s += chars[Math.floor(Math.random()*16)];
+    return s;
+  }
+  function padTime(n) { return String(n).padStart(2,'0'); }
+
+  function addFeedRow() {
+    var tbody = document.getElementById('feed-tbody');
+    if (!tbody) return;
+    var threat = threatTypes[feedCounter % threatTypes.length];
+    feedCounter++;
+
+    var now = new Date();
+    var ts = padTime(now.getHours()) + ':' + padTime(now.getMinutes()) + ':' + padTime(now.getSeconds());
+    var reqId = 'req_' + randHex(7);
+    var conf = (randInt(threat.confRange[0]*10, threat.confRange[1]*10) / 10).toFixed(1);
+    var confClass = parseFloat(conf) >= 80 ? 'conf-high' : (parseFloat(conf) >= 65 ? 'conf-mid' : 'conf-low');
+    var lat = threat.latMs ? randInt(threat.latMs[0], threat.latMs[1]) + 'ms' : (randInt(3,6)/10).toFixed(1) + 'ms';
+
+    var row = document.createElement('tr');
+    row.className = 'new-row';
+    row.innerHTML =
+      '<td>' + ts + '</td>' +
+      '<td>' + reqId + '</td>' +
+      '<td>' + threat.type + '</td>' +
+      '<td><span class="verdict-badge ' + threat.vClass + '">' + threat.verdict + '</span></td>' +
+      '<td><span class="tier-badge ' + threat.tClass + '">' + threat.tier + '</span></td>' +
+      '<td class="' + confClass + '">' + conf + '%</td>' +
+      '<td>' + lat + '</td>';
+
+    // prepend
+    tbody.insertBefore(row, tbody.firstChild);
+
+    // cap at 25 rows
+    while (tbody.rows.length > 25) tbody.deleteRow(tbody.rows.length - 1);
+
+    // update blocked count metric
+    if (threat.verdict === 'BLOCKED') {
+      var el = document.getElementById('met-1');
+      if (el) {
+        var cur = parseInt(el.textContent.replace(/,/g,'')) || 1247;
+        el.textContent = (cur + 1).toLocaleString();
+      }
+    }
+  }
+  setInterval(addFeedRow, 3000);
+
+  /* ── PANEL 4: SYNC DOT ── */
+  // Already handled by CSS animation; additionally add audit entries periodically
+  var auditActions = [
+    { action:'BLOCK', actionColor:'var(--red)', tier:'ON-DEVICE', tClass:'t-local', verdict:'BLOCKED', vClass:'v-blocked' },
+    { action:'PASS',  actionColor:'var(--green)', tier:'ON-DEVICE', tClass:'t-local', verdict:'CLEARED', vClass:'v-cleared' },
+    { action:'ESCALATE', actionColor:'var(--amber)', tier:'CLOUD', tClass:'t-cloud', verdict:'ESCALATED', vClass:'v-escalated' },
+  ];
+  var auditCounter = 0;
+
+  setInterval(function() {
+    var tbody = document.querySelector('.audit-table tbody');
+    if (!tbody) return;
+    var a = auditActions[auditCounter % auditActions.length];
+    auditCounter++;
+    var now = new Date();
+    var ts = padTime(now.getHours()) + ':' + padTime(now.getMinutes()) + ':' + padTime(now.getSeconds());
+    var hash = randHex(8).toUpperCase();
+
+    var row = document.createElement('tr');
+    row.innerHTML =
+      '<td>' + ts + '</td>' +
+      '<td><span class="audit-action" style="color:' + a.actionColor + ';">' + a.action + '</span></td>' +
+      '<td><span class="tier-badge ' + a.tClass + '">' + a.tier + '</span></td>' +
+      '<td><span class="verdict-badge ' + a.vClass + '">' + a.verdict + '</span></td>' +
+      '<td class="hash-val">' + hash + '</td>';
+
+    tbody.insertBefore(row, tbody.firstChild);
+    while (tbody.rows.length > 10) tbody.deleteRow(tbody.rows.length - 1);
+
+    // update audit count
+    var el = document.getElementById('met-4');
+    if (el) {
+      var cur = parseInt(el.textContent.replace(/,/g,'')) || 8431;
+      el.textContent = (cur + 1).toLocaleString();
+    }
+  }, 4500);
+
+  /* ── NAV TAB ACTIVE STATE ── */
+  var tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function(e) {
+      e.preventDefault();
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
