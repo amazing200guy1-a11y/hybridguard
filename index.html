@@ -715,10 +715,10 @@
       <div class="brand-sub">Zero-Trust On-Device &amp; Cloud Sentry</div>
     </div>
     <nav class="nav-tabs">
-      <a class="nav-tab active" href="#">TIER ROUTER</a>
-      <a class="nav-tab" href="#">THREAT FEED</a>
-      <a class="nav-tab" href="#">ESCALATION Q</a>
-      <a class="nav-tab" href="#">AUDIT LEDGER</a>
+      <a class="nav-tab active" href="#" data-target="panel-1">TIER ROUTER</a>
+      <a class="nav-tab" href="#" data-target="panel-2">THREAT FEED</a>
+      <a class="nav-tab" href="#" data-target="panel-3">ESCALATION Q</a>
+      <a class="nav-tab" href="#" data-target="panel-4">AUDIT LEDGER</a>
     </nav>
   </div>
 </header>
@@ -780,7 +780,7 @@
   <div class="panels-grid">
 
     <!-- ══ PANEL 1: INFERENCE TIER ROUTER ══ -->
-    <div class="panel">
+    <div class="panel" id="panel-1">
       <div class="panel-header">
         <div class="panel-title-row">
           <div class="panel-icon icon-blue">
@@ -859,7 +859,7 @@
     </div>
 
     <!-- ══ PANEL 2: LIVE THREAT DETECTION FEED ══ -->
-    <div class="panel">
+    <div class="panel" id="panel-2">
       <div class="panel-header">
         <div class="panel-title-row">
           <div class="panel-icon icon-red">
@@ -985,7 +985,7 @@
     </div>
 
     <!-- ══ PANEL 3: CLOUD ESCALATION QUEUE ══ -->
-    <div class="panel">
+    <div class="panel" id="panel-3">
       <div class="panel-header">
         <div class="panel-title-row">
           <div class="panel-icon icon-amber">
@@ -1148,7 +1148,7 @@
     </div>
 
     <!-- ══ PANEL 4: OFFLINE AUDIT LEDGER ══ -->
-    <div class="panel">
+    <div class="panel" id="panel-4">
       <div class="panel-header">
         <div class="panel-title-row">
           <div class="panel-icon icon-green">
@@ -1469,6 +1469,44 @@
   });
 
 })();
+
+  /* ── TAB SWITCHING ── */
+  (function() {
+    function activateTab(targetId) {
+      // Hide all panels
+      var panels = document.querySelectorAll('.panels-grid .panel');
+      panels.forEach(function(p) {
+        p.style.display = 'none';
+      });
+      // Show target panel
+      var target = document.getElementById(targetId);
+      if (target) target.style.display = 'flex';
+
+      // Update tab active state
+      var tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      var activeTab = document.querySelector('.nav-tab[data-target="' + targetId + '"]');
+      if (activeTab) activeTab.classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Hide all panels except first
+      var panels = document.querySelectorAll('.panels-grid .panel');
+      panels.forEach(function(p, i) {
+        p.style.display = i === 0 ? 'flex' : 'none';
+      });
+
+      // Wire up tab clicks
+      var tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = tab.getAttribute('data-target');
+          if (target) activateTab(target);
+        });
+      });
+    });
+  })();
 </script>
 </body>
 </html>
