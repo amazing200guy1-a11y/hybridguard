@@ -17,7 +17,7 @@
 
 **Dashboard:** [https://amazing200guy1-a11y.github.io/hybridguard/](https://amazing200guy1-a11y.github.io/hybridguard/)
 
-**YouTube Demo:** [https://youtu.be/[PENDING]](https://youtu.be/)
+**YouTube Demo:** [https://youtu.be/TwG4DexEda8](https://youtu.be/)
 
 ---
 
